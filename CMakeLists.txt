@@ -12,6 +12,9 @@ set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_LIST_DIR}/cmake )
 # Instruction for use can be found at the top of cmake/UseCython.cmake.
 include( UseCython )
 
+# We need the numpy includes, so add them to the source
+find_package( NumPy REQUIRED )
+
 # With CMake, a clean separation can be made between the source tree and the
 # build tree.  When all source is compiled, as with pure C/C++, the source is
 # no-longer needed in the build tree.  However, with pure *.py source, the
@@ -22,7 +25,7 @@ add_custom_target( ReplicatePythonSourceTree ALL ${CMAKE_COMMAND} -P
   ${CMAKE_CURRENT_BINARY_DIR}
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
 
-include_directories( ${VARPRO_BLOCKS_SOURCE_DIR}/include )
+include_directories( ${VARPRO_BLOCKS_SOURCE_DIR}/include  ${NUMPY_INCLUDE_DIRS})
 
 enable_testing()
 find_file( NOSETESTS_EXECUTABLE nosetests )
