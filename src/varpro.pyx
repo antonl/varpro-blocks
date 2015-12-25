@@ -21,12 +21,12 @@ cdef class ResponseBlock:
     cdef double [:, :] U, Ut, V, Vt, Sinv
     cdef double [:, :] model_matrix, Apinv
     
-    cdef double [:, :] mjac
+    cdef double [:, :] mjac, jac
     cdef double [:, :] dkrw, dkc
 
     cdef unsigned int [:, :] jidx
 
-    cdef unsigned int M,N,K
+    cdef unsigned int M,N,K,P
     cdef unicode model_name
     
     property residuals:
@@ -45,7 +45,15 @@ cdef class ResponseBlock:
         def __get__(self):
             return np.asarray(self.yh)
 
-    def __init__(self, measured_response, n_linear_params):
+    property mjacobian:
+        def __get__(self):
+            return np.asarray(self.mjac)
+
+    property jacobian:
+        def __get__(self):
+            return np.asarray(self.jac)
+
+    def __init__(self, measured_response, n_nonlinear_params, n_linear_params):
         if len(measured_response.shape) > 1:
             raise ValueError('expected 1-d measured response vector')
         
@@ -54,6 +62,7 @@ cdef class ResponseBlock:
         self.yh = np.empty_like(measured_response) # estimated response
         self.resid = np.empty_like(measured_response) # residuals
         self.M = measured_response.shape[0]
+        self.P = n_nonlinear_params
         self.N = n_linear_params
         self.beta = np.empty((self.N), dtype=np.float64)
         
@@ -142,26 +151,48 @@ cdef class ResponseBlock:
     cdef void _generate_model_jacobian(self, double [:] p):
         raise NotImplementedError('do not have a model in base class')
     
-    cdef void _calculate_jacobian(self, double [:] p):
+    cdef void _evaluate_jacobian(self, double [:] p):
         cdef unsigned int i, j, basis_no, param_no
+
+        IF MODEL_DEBUG:
+            print('Evaluating varpro jacobian...', end='')
         
         for i in range(self.jidx.shape[0]):
             basis_no = self.jidx[i, 0]
             param_no = self.jidx[i, 1]
 
+            IF MODEL_DEBUG:
+                print('scaling ({:d},{:d})...'.format(basis_no, param_no), end='')
+
             for j in range(self.M):
                 # i here is a proxy for param_no since that is sparse
-                self.dkc[i, j] = self.mjac[i, j]*self.beta[basis_no]
-                self.dkrw[basis_no, i] = self.mjac[i, j]*self.resid[j]
+                self.dkc[j, i] = self.mjac[j, i]*self.beta[basis_no]
+                self.dkrw[basis_no, i] = self.mjac[j, i]*self.resid[j]
 
         # now we have a dense representation of the rescaled jacobian
-        A = np.subtract(self.dkc, np.dot(self.U, 
-            np.dot(self.Sinv, np.dot(self.Vt, self.dkc))))
+        IF MODEL_DEBUG:
+            print('A...', end='')
+        A = np.subtract(self.dkc, np.dot(self.U, np.dot(self.Ut, self.dkc)))
+        IF MODEL_DEBUG:
+            print('B...', end='')
         B = np.dot(self.U, np.dot(self.Sinv, np.dot(self.Vt, self.dkrw)))
 
-        J = np.multiply(-1., np.add(A, B))
+        IF MODEL_DEBUG:
+            print('J...', end='')
+        J = np.add(A, B) # times -1 for true jacobian
 
-        # accumulate the jacobian by summing over basis functions
+        # merge terms that correspond to the same nonlinear parameter
+        IF MODEL_DEBUG:
+            print('merging...', end='')
+        self.jac = np.zeros((self.M, self.P), dtype=np.float64)
+        for i in range(self.jidx.shape[0]):
+            basis_no = self.jidx[i, 0]
+            param_no = self.jidx[i, 1]
+
+            for j in range(self.M):
+                self.jac[j, param_no] += -1.*J[j, i]
+        IF MODEL_DEBUG:
+            print('done')
 
     def __repr__(self):
         return \
@@ -174,10 +205,14 @@ cdef class SingleExpBlock(ResponseBlock):
     cdef double [:] t
     
     def __init__(self, measured_response, t):
-        super(SingleExpBlock, self).__init__(measured_response, 2)
+        super(SingleExpBlock, self).__init__(measured_response,
+                n_nonlinear_params=1, n_linear_params=2)
         
         if len(t.shape) > 1:
             raise ValueError('expected 1-d t vector')
+        
+        # initialize storage for jacobian matrix
+        self._init_jac_storage(1)
 
         self.t = t
         self.model_name = u'SingleExpBlock'
@@ -196,3 +231,15 @@ cdef class SingleExpBlock(ResponseBlock):
 
         IF MODEL_DEBUG:
             print('done')
+
+    cdef void _generate_model_jacobian(self, double [:] p):
+        cdef unsigned int i
+        cdef double t
+
+        # assemble index array
+        self.jidx[0, 0] = 1
+        self.jidx[0, 1] = 0
+
+        for i in range(self.M):
+            t = self.t[i]
+            self.mjac[i, 0] = -t*exp(-t*p[0])
