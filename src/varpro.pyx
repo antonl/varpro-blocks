@@ -1,4 +1,5 @@
 from __future__ import print_function
+from cpython cimport bool
 
 DEF MODEL_DEBUG = True
 
@@ -11,17 +12,19 @@ from libc.math cimport exp
 def test(s):
     print(s)
 
-def comparison_fmt(x):
-    return '{:0.5g}'.format(x)
-
 cdef class ResponseBlock:
     '''represents a sub-block of a global model function for an individual response
     
     '''
     
     cdef double [:] y, yh, resid, beta
-    cdef double [:, :] U, Vh, Sinv
+    cdef double [:, :] U, Ut, V, Vt, Sinv
     cdef double [:, :] model_matrix, Apinv
+    
+    cdef double [:, :] mjac
+    cdef double [:, :] dkrw, dkc
+
+    cdef unsigned int [:, :] jidx
 
     cdef unsigned int M,N,K
     cdef unicode model_name
@@ -59,16 +62,36 @@ cdef class ResponseBlock:
         # preallocate space for running SVD
         self.K = min(self.M, self.N)
         self.U = np.empty((self.M, self.K), dtype=np.float64)
-        self.Vh = np.empty((self.K, self.N), dtype=np.float64)
+        self.Vt = np.empty((self.K, self.N), dtype=np.float64)
+
+        # for caching inverses
+        self.Ut = np.empty((self.K, self.M), dtype=np.float64)
+        self.V = np.empty((self.N, self.K), dtype=np.float64)
+
         self.Sinv = np.empty((self.K, self.K), dtype=np.float64)
         self.Apinv = np.empty((self.N, self.M), dtype=np.float64)
-        
-        # preallocate space for calculating the Jacobian
+
+        # preallocate space for jacobian calculations
+        # self._init_jac_storage(2) # remember to call this in subclass
+
         self.model_name = u'ResponseBlock'
 
-    def update_model(self, double [:] p):
+    cdef void _init_jac_storage(self, unsigned int Q):
+        # initialize all of the required storage given the number of
+        # nonzero columns in the Jacobian
+        self.jidx = np.zeros((Q, 2), dtype=np.uint32)
+
+        self.mjac = np.zeros((self.M, Q), dtype=np.float64)
+        self.dkc = np.zeros((self.M, Q), dtype=np.float64)
+        self.dkrw = np.zeros((self.N, Q), dtype=np.float64)
+
+    def update_model(self, double [:] p, bool eval_jac=False):
         self._generate_model_matrix(p)
         self._evaluate_model(p)
+
+        if eval_jac:
+            self._generate_model_jacobian(p)
+            self._evaluate_jacobian(p)
     
     cdef void _generate_model_matrix(self, double [:] p):
         cdef unsigned int i,j
@@ -90,7 +113,7 @@ cdef class ResponseBlock:
         IF MODEL_DEBUG:
             print('Estimating linear parameters...', end='')
             
-        self.U, s, self.Vh = svd(self.model_matrix, compute_uv=True, 
+        self.U, s, self.Vt = svd(self.model_matrix, compute_uv=True, 
                 full_matrices=False)
 
         IF MODEL_DEBUG:
@@ -98,8 +121,9 @@ cdef class ResponseBlock:
         self.Sinv = np.diag(1/s)
         IF MODEL_DEBUG:
             print('sigma...', end='')
-        np.dot(np.transpose(self.Vh), np.dot(self.Sinv, np.transpose(self.U)),
-                out=np.asarray(self.Apinv))
+        self.V = np.transpose(self.Vt)
+        self.Ut = np.transpose(self.U)
+        np.dot(self.V, np.dot(self.Sinv, self.Ut), out=np.asarray(self.Apinv))
         IF MODEL_DEBUG:
             print('Apinv...', end='')
         np.dot(self.Apinv, self.y, out=np.asarray(self.beta))
@@ -114,16 +138,31 @@ cdef class ResponseBlock:
         IF MODEL_DEBUG:
             print('done')
             print('Smallest singular value {:.5g}'.format(s[-1]))
+
+    cdef void _generate_model_jacobian(self, double [:] p):
+        raise NotImplementedError('do not have a model in base class')
     
-    cdef void calculate_jacobian(self, double [:] p):
-        # virtual implementation, do nothing
-        pass
-    
-    IF MODEL_DEBUG:
-        def test(self):
-            fmt = {'float_kind': comparison_fmt}
-            print('Some data: {:s}'.format(np.array2string(np.asarray(self.y), formatter=fmt)))
-    
+    cdef void _calculate_jacobian(self, double [:] p):
+        cdef unsigned int i, j, basis_no, param_no
+        
+        for i in range(self.jidx.shape[0]):
+            basis_no = self.jidx[i, 0]
+            param_no = self.jidx[i, 1]
+
+            for j in range(self.M):
+                # i here is a proxy for param_no since that is sparse
+                self.dkc[i, j] = self.mjac[i, j]*self.beta[basis_no]
+                self.dkrw[basis_no, i] = self.mjac[i, j]*self.resid[j]
+
+        # now we have a dense representation of the rescaled jacobian
+        A = np.subtract(self.dkc, np.dot(self.U, 
+            np.dot(self.Sinv, np.dot(self.Vt, self.dkc))))
+        B = np.dot(self.U, np.dot(self.Sinv, np.dot(self.Vt, self.dkrw)))
+
+        J = np.multiply(-1., np.add(A, B))
+
+        # accumulate the jacobian by summing over basis functions
+
     def __repr__(self):
         return \
     '''{:s}(measured_response={!r}, n_linear_params={:d})'''.format(self.model_name, self.y, self.N)
