@@ -1,7 +1,7 @@
 from __future__ import print_function
 from cpython cimport bool
 
-DEF MODEL_DEBUG = True
+DEF MODEL_DEBUG = False
 
 import numpy as np
 cimport numpy as np
