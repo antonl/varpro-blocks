@@ -2,7 +2,7 @@
 cmake_minimum_required( VERSION 2.8.5 )
 
 # Set the project name
-project( CYTHON_CMAKE_EXAMPLE )
+project( VARPRO_BLOCKS )
 
 # Make the scripts available in the 'cmake' directory available for the
 # 'include()' command, 'find_package()' command.
@@ -22,7 +22,7 @@ add_custom_target( ReplicatePythonSourceTree ALL ${CMAKE_COMMAND} -P
   ${CMAKE_CURRENT_BINARY_DIR}
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
 
-include_directories( ${CYTHON_CMAKE_EXAMPLE_SOURCE_DIR}/include )
+include_directories( ${VARPRO_BLOCKS_SOURCE_DIR}/include )
 
 enable_testing()
 find_file( NOSETESTS_EXECUTABLE nosetests )

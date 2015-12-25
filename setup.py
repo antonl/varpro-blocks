@@ -10,17 +10,17 @@ if os.path.exists('readme.rst'):
 Please see the file 'readme.rst' for further instructions.""")
     sys.exit(1)
 
-
 setup(
-    name = "cythoncmakeexample",
+    name = "varpro-blocks",
     package_dir = {'': 'src'},
     data_files = [(get_python_lib(), glob.glob('src/*.so')),
         ('bin', ['bin/rectangle-props'])],
-    author = 'Matt McCormick',
-    description = 'Use the CMake build system to make Cython modules.',
+    author = 'Anton Loukianov',
+    description = 'An experiment for performing regression using variable
+    projection on multiple responses at the same time, "Global Fitting."',
     license = 'Apache',
-    keywords = 'cmake cython build',
-    url = 'http://github.com/thewtex/cython-cmake-example',
+    keywords = 'regression numpy cython cmake statistics',
+    url = 'https://github.com/antonl/varpro-blocks',
     test_require = ['nose'],
     zip_safe = False,
     )
