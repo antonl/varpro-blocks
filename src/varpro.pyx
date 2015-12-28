@@ -6,7 +6,7 @@ DEF MODEL_DEBUG = False
 import numpy as np
 cimport numpy as np
 
-from scipy.linalg import svd, diagsvd
+from scipy.linalg import svd, diagsvd, qr, solve_triangular
 from libc.math cimport exp
 
 def test(s):
@@ -17,7 +17,7 @@ cdef class ResponseBlock:
     
     '''
     
-    cdef double [:] y, yh, resid, beta
+    cdef double [:] y, yh, resid, beta, alpha
     cdef double [:, :] U, Ut, V, Vt, Sinv
     cdef double [:, :] model_matrix, Apinv
     
@@ -28,7 +28,7 @@ cdef class ResponseBlock:
 
     cdef unsigned int M,N,K,P
     cdef unicode model_name
-    
+
     property residuals:
         def __get__(self):
             return np.asarray(self.resid)
@@ -95,6 +95,7 @@ cdef class ResponseBlock:
         self.dkrw = np.zeros((self.N, Q), dtype=np.float64)
 
     def update_model(self, double [:] p, bool eval_jac=False):
+        self.alpha = p
         self._generate_model_matrix(p)
         self._evaluate_model(p)
 
@@ -193,6 +194,42 @@ cdef class ResponseBlock:
                 self.jac[j, param_no] += -1.*J[j, i]
         IF MODEL_DEBUG:
             print('done')
+
+    def full_jacobian(self):
+        '''reuse cached results to get a summary of the fit'''
+        cdef unsigned int i, j
+        cdef unsigned int basis_no, param_no
+
+        full_jac = np.zeros((self.M, self.N + self.P), dtype=np.float64)
+        # reuse the last calculated model matrix
+        for j in range(self.M): 
+            for i in range(self.jidx.shape[0]):
+                basis_no = self.jidx[i, 0]
+                param_no = self.jidx[i, 1]
+                
+                # first come the linear parameters, then the nonlinear ones
+                # add the number of linear parameters to the offset
+                full_jac[j, self.N + param_no] += self.beta[basis_no]*self.mjac[j, i] 
+            # now copy over the derivative wrt the linear parameters,
+            # which is just the model matrix summed over the basis functions
+            for i in range(self.N):
+                full_jac[j, i] += self.model_matrix[j, i]
+
+        IF MODEL_DEBUG:
+            print('Generated full jacobian.')
+        return full_jac
+    
+    #cdef void _unused(self):
+    #    Q,R,P = qr(full_jac, mode='full', pivoting=True)
+    #    Rinv = solve_triangular(R, np.eye(R.shape[0]))
+    #    CovMat = np.dot(Rinv, Rinv.T)[P, P] # undo pivoting
+    #    std_dev = np.sqrt(np.diag(CovMat))
+    #    D = np.diag(1/std_dev)
+    #    CorrMat = np.dot(np.dot(D, CovMat), D)
+    #    
+    #    tratio = np.concatenate([self.beta, self.alpha])/std_dev
+
+    #    self.dirty = False
 
     def __repr__(self):
         return \
