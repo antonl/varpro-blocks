@@ -4,3 +4,9 @@
 #    ${VARPRO_BLOCKS_SOURCE_DIR}/src/blocks.pyx
 #    varpro.py
 #  )
+
+# Add c module
+add_executable( test_arma main.cc )
+add_dependencies( test_arma varpro-blocks )
+target_link_libraries( test_arma varpro-blocks ${ARMADILLO_LIBRARIES})
+set_property(TARGET test_arma PROPERTY CXX_STANDARD 11)
