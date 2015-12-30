@@ -32,8 +32,3 @@ cdef vec* np2vec(np.ndarray[ndim=1, dtype=np.float64_t] X)
 
 cdef np.ndarray mat2np(mat *X)
 cdef np.ndarray vec2np(vec *X)
-
-cdef extern from "varpro-block.h" nogil:
-    cdef cppclass response_block:
-        response_block(const mat& m)
-        update_model(vec p, bool update_jac)

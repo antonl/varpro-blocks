@@ -17,6 +17,10 @@ find_package( NumPy REQUIRED )
 
 find_package( Armadillo REQUIRED )
 
+set( PYCXX_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/pycxx" CACHE FILEPATH
+    "location of PyCXX distribution dir" )
+find_package (PyCXX REQUIRED )
+
 # With CMake, a clean separation can be made between the source tree and the
 # build tree.  When all source is compiled, as with pure C/C++, the source is
 # no-longer needed in the build tree.  However, with pure *.py source, the
@@ -27,8 +31,8 @@ add_custom_target( ReplicatePythonSourceTree ALL ${CMAKE_COMMAND} -P
   ${CMAKE_CURRENT_BINARY_DIR}
   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
 
-include_directories( ${VARPRO_BLOCKS_SOURCE_DIR}/include  ${NUMPY_INCLUDE_DIRS}
-    ${ARMADILLO_INCLUDE_DIRS} )
+include_directories( ${VARPRO_BLOCKS_SOURCE_DIR}/include ${NUMPY_INCLUDE_DIRS}
+    ${ARMADILLO_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS} ${PYCXX_INCLUDE_DIR} )
 
 enable_testing()
 find_file( NOSETESTS_EXECUTABLE nosetests )
@@ -37,3 +41,4 @@ add_test( nosetests "${NOSETESTS_EXECUTABLE}" -v --with-xunit )
 # Process the CMakeLists.txt in the 'src' and 'bin' directory.
 add_subdirectory( src )
 add_subdirectory( bin )
+
