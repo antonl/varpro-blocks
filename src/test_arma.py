@@ -28,7 +28,6 @@ def test_roundtrip_vec():
     rV = aV.to_numpy()
     assert np.allclose(rV, v), "data mismatch"
 
-
 if __name__ == "__main__":
     print("test_shapes: ")
     test_shapes()

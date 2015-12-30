@@ -35,8 +35,11 @@ include_directories( ${VARPRO_BLOCKS_SOURCE_DIR}/include ${NUMPY_INCLUDE_DIRS}
     ${ARMADILLO_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS} ${PYCXX_INCLUDE_DIR} )
 
 enable_testing()
-find_file( NOSETESTS_EXECUTABLE nosetests )
-add_test( nosetests "${NOSETESTS_EXECUTABLE}" -v --with-xunit )
+find_file( PYTEST_EXECUTABLE py.test )
+add_custom_target(check ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1
+        ${CMAKE_CTEST_COMMAND} -C $<CONFIG> --verbose
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+add_test( pytest "${PYTEST_EXECUTABLE}" -vv )
 
 # Process the CMakeLists.txt in the 'src' and 'bin' directory.
 add_subdirectory( src )
