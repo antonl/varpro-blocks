@@ -1,8 +1,10 @@
 #pragma once
 
+#include <memory>
 #include <armadillo>
 #include "CXX/Objects.hxx"
 #include "CXX/Extensions.hxx"
+#include "spdlog/spdlog.h"
 
 class arma_mat : public Py::PythonClass<arma_mat>
 {
@@ -22,6 +24,7 @@ public:
 
 private:
     arma::mat m_mat;
+    std::shared_ptr<spdlog::logger> logger;
 };
 
 /*

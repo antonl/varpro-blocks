@@ -4,19 +4,22 @@
 
 #include <iostream>
 
-arma_module::arma_module() : Py::ExtensionModule<arma_module>("arma") 
+arma_module::arma_module() : Py::ExtensionModule<arma_module>("arma"), 
+    logger(spdlog::get("arma"))
 {
+    logger->debug("in arma_module ctor");
     arma_mat::init_type();
     initialize("armadillo to numpy bridge");
 
     Py::Dict d(moduleDictionary());
     Py::Object mat(arma_mat::type());
     d["mat"] = mat;
+    logger->debug("added mat object to module dict");
 }
 
 arma_module::~arma_module() 
 {
-    std::cout << "deinit arma_module" << std::endl;
+    logger->debug("in arma_module dtor");
 }
 
 #if defined( _WIN32 )
@@ -27,8 +30,11 @@ arma_module::~arma_module()
 
 extern "C" EXPORT_SYMBOL PyObject *PyInit_arma() {
     import_array();
+    auto logger = spdlog::stdout_logger_mt("arma");
+    logger->set_level(spdlog::level::debug);
+
+    logger->debug("initializing module arma");
     static arma_module *instance = new arma_module;
-    std::cout << "Initializing module arma" << std::endl;
     return instance->module().ptr();
 }
 

@@ -21,5 +21,6 @@ endif()
 
 add_library(varpro-blocks STATIC varpro-block.cpp)
 set_property(TARGET varpro-blocks PROPERTY CXX_STANDARD 11)
+set_property(TARGET arma PROPERTY CXX_STANDARD 11)
 #set_property(TARGET varprocpp PROPERTY CXX_STANDARD 11)
 #set_property(TARGET arma PROPERTY CXX_STANDARD 11)

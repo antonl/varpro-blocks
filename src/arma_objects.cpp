@@ -3,6 +3,10 @@
 
 void arma_mat::init_type(void)
 {
+    spdlog::stdout_logger_mt("arma.mat");
+    auto logger = spdlog::get("arma");
+    logger->debug("initialized arma_mat type");
+    
     behaviors().name("mat");
     behaviors().doc("armadillo mat class");
 
@@ -14,14 +18,24 @@ void arma_mat::init_type(void)
 
 arma_mat::arma_mat(Py::PythonClassInstance *self, Py::Tuple &args, Py::Dict &kwds):
     Py::PythonClass<arma_mat>::PythonClass(self, args, kwds),
-    m_mat()
+    logger(spdlog::get("arma.mat"))
 {
-    std::cout << "called constructor" << std::endl;
+    logger->set_level(spdlog::level::debug);
+    logger->debug("in arma_mat ctor");
+    if(args.length() == 1) {
+        logger->debug() << "interpreting as numpy ndarray";
+    } else if(args.length() == 2) {
+        logger->debug() << "interpreting as (n_rows, n_cols) pair";
+    } else if(args.length() > 2) {
+        logger->error("ctor received too many arguments");
+        throw Py::TypeError("too many arguments");
+    }
+    logger->debug("initialized");
 }
 
 arma_mat::~arma_mat()
 {
-    std::cout << "called destructor" << std::endl;
+    logger->debug("in arma_mat dtor");
 }
 
 /*
