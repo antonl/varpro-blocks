@@ -9,11 +9,14 @@ arma_module::arma_module() : Py::ExtensionModule<arma_module>("arma"),
 {
     logger->debug("in arma_module ctor");
     arma_mat::init_type();
+    arma_vec::init_type();
     initialize("armadillo to numpy bridge");
 
     Py::Dict d(moduleDictionary());
     Py::Object mat(arma_mat::type());
+    Py::Object vec(arma_vec::type());
     d["mat"] = mat;
+    d["vec"] = vec;
     logger->debug("added mat object to module dict");
 }
 

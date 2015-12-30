@@ -10,6 +10,12 @@
 #cython_add_module( varprocpp varprocpp.pyx )
 
 add_definitions(-D NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION) # get rid of annoying api message
+
+# as discussed here,
+# http://stackoverflow.com/questions/12253389/numpy-c-api-link-several-object-files
+# http://docs.scipy.org/doc/numpy/reference/c-api.array.html#importing-the-api:
+add_definitions(-D PY_ARRAY_UNIQUE_SYMBOL=arma_NUMPY_API)
+
 add_library(arma SHARED arma_objects.cpp arma_module.cpp ${PYCXX_SOURCES} )
 set_target_properties(arma PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(arma PROPERTIES PREFIX "" SUFFIX ".so")
