@@ -9,13 +9,14 @@
 #cython_add_module( arma arma.pyx )
 #cython_add_module( varprocpp varprocpp.pyx )
 
-add_library(varpro SHARED varpro.cpp ${PYCXX_SOURCES} )
-set_target_properties(varpro PROPERTIES LINKER_LANGUAGE CXX)
-set_target_properties(varpro PROPERTIES PREFIX "" SUFFIX ".so")
-set_target_properties(varpro PROPERTIES MACOSX_RPATH TRUE)
+add_definitions(-D NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION) # get rid of annoying api message
+add_library(arma SHARED arma_objects.cpp arma_module.cpp ${PYCXX_SOURCES} )
+set_target_properties(arma PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(arma PROPERTIES PREFIX "" SUFFIX ".so")
+set_target_properties(arma PROPERTIES MACOSX_RPATH TRUE)
 if(APPLE)
     # following advice from http://blog.tim-smith.us/2015/09/python-extension-modules-os-x/
-    set_target_properties(varpro PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
+    set_target_properties(arma PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
 endif() 
 
 add_library(varpro-blocks STATIC varpro-block.cpp)
