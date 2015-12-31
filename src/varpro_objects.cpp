@@ -81,12 +81,12 @@ template <typename T> varpro_block<T>::varpro_block(Py::PythonClassInstance *sel
     super::PythonClass(self, args, kwds),
     logger(spdlog::get("varpro.varpro_block")) 
 {
-    logger->debug("created varpro_block<{}>", T::name);
+    logger->debug("created varpro_block<{}>", "butts");
 }
 
 template <typename T> varpro_block<T>::~varpro_block()
 {
-    logger->debug("in varpro_block<{}> dtor", T::name);
+    logger->debug("in varpro_block<{}> dtor", "butts");
 }
 
 arma::vec make_arma_vec(const Py::Object obj) 
@@ -103,5 +103,8 @@ template <> varpro_block<single_exp_block>::varpro_block(Py::PythonClassInstance
     super::PythonClass(self, args, kwds),
     m_block(make_arma_vec(args[0]), make_arma_vec(args[1]))
 {
-    logger->debug("in specialized varpro_block<{}> ctor", single_exp_block::name);
+    logger->debug("in specialized varpro_block<{}> ctor", "static");
 }
+
+template class varpro_block<single_exp_block>;
+const char* single_exp_block::name = "subclass";

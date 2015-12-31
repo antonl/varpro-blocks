@@ -1,7 +1,6 @@
 #include "varpro_module.h"
 #include "varpro_objects.h"
 
-
 varpro_module::varpro_module() : Py::ExtensionModule<varpro_module>("varpro"),
     logger(spdlog::get("varpro"))
 {

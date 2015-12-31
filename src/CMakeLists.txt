@@ -41,7 +41,7 @@ if(APPLE)
     # following advice from http://blog.tim-smith.us/2015/09/python-extension-modules-os-x/
     set_target_properties(varpro PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
 endif() 
-target_link_libraries(varpro pycxx-builtin)
+target_link_libraries(varpro pycxx-builtin arma)
 
 add_library(varpro-blocks STATIC varpro-block.cpp)
 set_property(TARGET varpro-blocks PROPERTY CXX_STANDARD 11)

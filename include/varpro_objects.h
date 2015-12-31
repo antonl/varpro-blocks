@@ -18,8 +18,8 @@ public:
     cvarpro_block& operator=(const cvarpro_block& other) = delete;
 
     void update_model(const arma::vec p, bool update_jac=false);
+    static const char *name;
 
-    constexpr static auto name = "cvarpro_block";
 protected:
     const arma::vec y; // measured response
     arma::vec yh; // estimated response
@@ -49,7 +49,7 @@ class single_exp_block : public cvarpro_block
 public:
     explicit single_exp_block(const arma::vec measured, const arma::vec t);
     virtual ~single_exp_block();
-    constexpr static auto name = "single_exp_block";
+    static const char *name;
 protected:
     virtual void _generate_model_matrix(const arma::vec p);
     virtual void _generate_jacobian_matrix(const arma::vec p);
@@ -70,7 +70,7 @@ private:
     std::shared_ptr<spdlog::logger> logger;
     T m_block;
 
-    using super = Py::PythonClass<varpro_block<T>>;
+    typedef Py::PythonClass<varpro_block<T>> super;
 
     static_assert(std::is_base_of<cvarpro_block, T>::value, "varpro_block must wrap a cvarpro_block type");
 };
