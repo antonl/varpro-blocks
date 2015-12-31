@@ -9,7 +9,7 @@
 class arma_mat : public Py::PythonClass<arma_mat>
 {
 public:
-    static void init_type(void);
+    static void init_type();
 
     arma_mat(Py::PythonClassInstance *self, Py::Tuple &args, Py::Dict &kwds);
     virtual ~arma_mat();
@@ -18,6 +18,7 @@ public:
     Py::Object n_cols();
     Py::Object n_elem();
     Py::Object to_numpy();
+    operator arma::mat();
 
     PYCXX_NOARGS_METHOD_DECL(arma_mat, n_rows)
     PYCXX_NOARGS_METHOD_DECL(arma_mat, n_cols)
@@ -34,7 +35,7 @@ private:
 class arma_vec : public Py::PythonClass<arma_vec>
 {
 public:
-    static void init_type(void);
+    static void init_type();
 
     arma_vec(Py::PythonClassInstance *self, Py::Tuple &args, Py::Dict &kwds);
     virtual ~arma_vec();
@@ -42,6 +43,8 @@ public:
     Py::Object n_rows();
     Py::Object n_elem();
     Py::Object to_numpy();
+
+    operator arma::vec();
 
     PYCXX_NOARGS_METHOD_DECL(arma_vec, n_rows)
     PYCXX_NOARGS_METHOD_DECL(arma_vec, n_elem)

@@ -88,6 +88,16 @@ arma_vec::~arma_vec()
     logger->debug("in arma_vec dtor");
 }
 
+arma_mat::operator arma::mat()
+{
+    return m_mat;
+}
+
+arma_vec::operator arma::vec()
+{
+    return m_vec;
+}
+
 void arma_mat::_construct_from_ndarray(const Py::Object array) 
 {
     if(!PyArray_CheckExact(array.ptr())) {
