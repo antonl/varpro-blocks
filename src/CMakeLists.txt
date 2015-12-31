@@ -10,6 +10,7 @@
 #cython_add_module( varprocpp varprocpp.pyx )
 
 add_definitions(-D NPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION) # get rid of annoying api message
+add_definitions(-D PYCXX_DEBUG -fpermissive)
 
 # as discussed here,
 # http://stackoverflow.com/questions/12253389/numpy-c-api-link-several-object-files
@@ -41,7 +42,7 @@ if(APPLE)
     # following advice from http://blog.tim-smith.us/2015/09/python-extension-modules-os-x/
     set_target_properties(varpro PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
 endif() 
-target_link_libraries(varpro pycxx-builtin arma)
+target_link_libraries(varpro pycxx-builtin)
 
 add_library(varpro-blocks STATIC varpro-block.cpp)
 set_property(TARGET varpro-blocks PROPERTY CXX_STANDARD 11)

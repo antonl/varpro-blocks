@@ -29,13 +29,14 @@ single_exp_block::single_exp_block(const arma::vec measured, const arma::vec t):
     logger->debug("in single_exp_block::single_exp_block");
 
     if(measured.size() != t.size())
-        throw std::logic_error("t and measured vectors must match size");
+        logger->error("size mismatch");
 
     P = 1;
     N = 2;
     Amat = arma::mat(M, N);
     jidx = {{0, 1}};
     mjac = arma::mat(M, 1);
+    logger->debug("finished single_exp_block init");
 }
 
 single_exp_block::~single_exp_block()
@@ -81,21 +82,23 @@ template <typename T> varpro_block<T>::varpro_block(Py::PythonClassInstance *sel
     super::PythonClass(self, args, kwds),
     logger(spdlog::get("varpro.varpro_block")) 
 {
-    logger->debug("created varpro_block<{}>", "butts");
+    logger->debug("created varpro_block<{}>", T::name);
 }
 
 template <typename T> varpro_block<T>::~varpro_block()
 {
-    logger->debug("in varpro_block<{}> dtor", "butts");
+    logger->debug("in varpro_block<{}> dtor", T::name);
 }
 
-arma::vec make_arma_vec(const Py::Object obj) 
+arma::vec make_arma_vec(Py::Object obj) 
 {
-    Py::Tuple args(obj);
+    Py::Tuple args(1);
+    args[0] = obj;
     Py::Dict d;
     Py::Callable arma_vec_type(arma_vec::type());
     Py::PythonClassObject<arma_vec> v = arma_vec_type.apply(args, d);
     arma::vec tmp(*v.getCxxObject());
+    tmp.print();
     return tmp;
 }
 
@@ -103,8 +106,9 @@ template <> varpro_block<single_exp_block>::varpro_block(Py::PythonClassInstance
     super::PythonClass(self, args, kwds),
     m_block(make_arma_vec(args[0]), make_arma_vec(args[1]))
 {
-    logger->debug("in specialized varpro_block<{}> ctor", "static");
+    //logger->debug("in specialized varpro_block<{}> ctor", "butts");
 }
 
 template class varpro_block<single_exp_block>;
-const char* single_exp_block::name = "subclass";
+const char* cvarpro_block::name = "cvarpro_block";
+const char* single_exp_block::name = "single_exp_block";
