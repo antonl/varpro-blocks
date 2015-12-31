@@ -70,5 +70,7 @@ private:
     std::shared_ptr<spdlog::logger> logger;
     T m_block;
 
+    using super = Py::PythonClass<varpro_block<T>>;
+
     static_assert(std::is_base_of<cvarpro_block, T>::value, "varpro_block must wrap a cvarpro_block type");
 };

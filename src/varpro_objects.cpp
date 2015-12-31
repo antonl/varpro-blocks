@@ -68,7 +68,6 @@ void single_exp_block::_generate_jacobian_matrix(const arma::vec p)
 
 template <typename T> void varpro_block<T>::init_type()
 {
-    using super = Py::PythonClass<varpro_block<T>>;
     auto logger = spdlog::get("varpro");
     logger->debug("initialized varpro_block<{}>", T::name);
 
@@ -79,7 +78,7 @@ template <typename T> void varpro_block<T>::init_type()
 }
 
 template <typename T> varpro_block<T>::varpro_block(Py::PythonClassInstance *self, Py::Tuple &args, Py::Dict &kwds):
-    Py::PythonClass<varpro_block<T>>::PythonClass(self, args, kwds),
+    super::PythonClass(self, args, kwds),
     logger(spdlog::get("varpro.varpro_block")) 
 {
     logger->debug("created varpro_block<{}>", T::name);
@@ -101,7 +100,7 @@ arma::vec make_arma_vec(const Py::Object obj)
 }
 
 template <> varpro_block<single_exp_block>::varpro_block(Py::PythonClassInstance *self, Py::Tuple &args, Py::Dict &kwds):
-    Py::PythonClass<varpro_block<single_exp_block>>::PythonClass(self, args, kwds),
+    super::PythonClass(self, args, kwds),
     m_block(make_arma_vec(args[0]), make_arma_vec(args[1]))
 {
     logger->debug("in specialized varpro_block<{}> ctor", single_exp_block::name);
