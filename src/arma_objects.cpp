@@ -69,7 +69,7 @@ arma_vec::arma_vec(Py::PythonClassInstance *self, Py::Tuple &args, Py::Dict &kwd
             _construct_from_ndarray(args[0]);
         } else {
             logger->debug("interpreting as dimension");
-            m_vec = arma::vec(Py::Long(args[0]));
+            m_vec = arma::vec(Py::Long(args[0]), arma::fill::zeros);
         }
     } else {
         logger->error("ctor received incorrect number of arguments ({})", args.length());

@@ -42,7 +42,6 @@ protected:
 
     std::shared_ptr<spdlog::logger> logger;
 private:
-    cvarpro_block() = default;
 };
 
 class single_exp_block : public cvarpro_block
@@ -50,6 +49,7 @@ class single_exp_block : public cvarpro_block
 public:
     explicit single_exp_block(const arma::vec measured, const arma::vec t);
     virtual ~single_exp_block();
+    constexpr static auto name = "single_exp_block";
 protected:
     virtual void _generate_model_matrix(const arma::vec p);
     virtual void _generate_jacobian_matrix(const arma::vec p);
@@ -72,6 +72,3 @@ private:
 
     static_assert(std::is_base_of<cvarpro_block, T>::value, "varpro_block must wrap a cvarpro_block type");
 };
-
-template class varpro_block<single_exp_block>;
-

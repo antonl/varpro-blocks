@@ -10,6 +10,9 @@ arma_module::arma_module() : Py::ExtensionModule<arma_module>("arma"),
     logger->debug("in arma_module ctor");
     arma_mat::init_type();
     arma_vec::init_type();
+
+    add_varargs_method("vec_factory", &arma_module::vec_factory, "produce a new-style class");
+
     initialize("armadillo to numpy bridge");
 
     Py::Dict d(moduleDictionary());
@@ -18,6 +21,13 @@ arma_module::arma_module() : Py::ExtensionModule<arma_module>("arma"),
     d["mat"] = mat;
     d["vec"] = vec;
     logger->debug("added mat object to module dict");
+}
+
+Py::Object arma_module::vec_factory(const Py::Tuple &args)
+{
+    Py::Callable class_type(arma_vec::type());
+    Py::PythonClassObject<arma_vec> new_style_obj(class_type.apply(args));
+    return new_style_obj;
 }
 
 arma_module::~arma_module() 

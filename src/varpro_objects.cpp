@@ -90,18 +90,19 @@ template <typename T> varpro_block<T>::~varpro_block()
     logger->debug("in varpro_block<{}> dtor", T::name);
 }
 
-Py::Object make_arma_vec(const Py::Object obj) 
+arma::vec make_arma_vec(const Py::Object obj) 
 {
     Py::Tuple args(obj);
     Py::Dict d;
     Py::Callable arma_vec_type(arma_vec::type());
-    Py::PythonClassObject<arma_vec> v = arma_vec(arma_vec_type.apply(args, d), args, d);
-    return Py::new_reference_to(v);
+    Py::PythonClassObject<arma_vec> v = arma_vec_type.apply(args, d);
+    arma::vec tmp(*v.getCxxObject());
+    return tmp;
 }
 
 template <> varpro_block<single_exp_block>::varpro_block(Py::PythonClassInstance *self, Py::Tuple &args, Py::Dict &kwds):
-    Py::PythonClass<varpro_block<single_exp_block>>::PythonClass(self, args, kwds)
+    Py::PythonClass<varpro_block<single_exp_block>>::PythonClass(self, args, kwds),
+    m_block(make_arma_vec(args[0]), make_arma_vec(args[1]))
 {
-    m_block(make_arma_vec(args[0]), make_arma_vec(arma_vec(args[1])));
-    logger->debug("in specialized varpro_block<{}> ctor", T::name);
+    logger->debug("in specialized varpro_block<{}> ctor", single_exp_block::name);
 }
