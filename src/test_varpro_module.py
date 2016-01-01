@@ -57,5 +57,13 @@ def test_arma_vec_roundtrip():
 
     assert np.allclose(x, z), "roundtrip failed"
 
+def test_arma_mat_noncontiguous():
+    x = np.eye(5, dtype=float)
+    y = x[:5, :3]
+    assert all([y.flags.f_contigous == False, y.flags.c_contiguous == False])
+
+    with pytest.raises(Exception):
+        z = varpro.arma.Mat(y)
+
 if __name__ == "__main__":
     test_import()
