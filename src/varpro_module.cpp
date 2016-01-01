@@ -1,46 +1,98 @@
-#include "varpro_module.h"
-#include "varpro_objects.h"
+#include <armadillo>
+#include <string>
+#include "pybind11/pybind11.h"
+#include "pybind11/numpy.h"
 
+namespace py  = pybind11;
 
-varpro_module::varpro_module() : Py::ExtensionModule<varpro_module>("varpro"),
-    logger(spdlog::get("varpro"))
+const std::string hello() {
+    return "Hello, world!";
+}
+
+py::buffer_info vec_buffer(arma::vec &m) 
 {
-    logger->debug("in varpro_module ctor");
-    varpro_block<single_exp_block>::init_type();
-    initialize("varpro c++ implementation");
-
-    Py::Dict d(moduleDictionary());
-    Py::Object single_exp(varpro_block<single_exp_block>::type());
-    d["single_exp_block"] = single_exp;
-    logger->debug("added single_exp_block to module dict");
+    py::buffer_info buf(
+            m.memptr(), 
+            sizeof(arma::vec::elem_type), 
+            py::format_descriptor<arma::vec::elem_type>::value(),
+            1,
+            {m.n_rows,},
+            {sizeof(arma::vec::elem_type),}
+        );
+    return buf;
 }
 
-varpro_module::~varpro_module()
+py::buffer_info mat_buffer(arma::mat &m) 
 {
-    logger->debug("in varpro_module dtor");
+    py::buffer_info buf(
+            m.memptr(), 
+            sizeof(arma::mat::elem_type), 
+            py::format_descriptor<arma::mat::elem_type>::value(),
+            2,
+            {m.n_rows, m.n_cols},
+            {sizeof(arma::mat::elem_type), sizeof(arma::vec::elem_type)*m.n_rows}
+        );
+    return buf;
 }
 
-#if defined( _WIN32 )
-#define EXPORT_SYMBOL __declspec( dllexport )
-#else
-#define EXPORT_SYMBOL
-#endif
+void vec_np_init(arma::vec &v, py::array inp) 
+{
+    py::buffer_info info = inp.request();
+    if(info.format != py::format_descriptor<arma::vec::elem_type>::value() || info.ndim != 1)
+        throw std::runtime_error("Incompatible buffer format!");
 
-extern "C" EXPORT_SYMBOL PyObject *PyInit_varpro() {
-    auto logger1 = spdlog::stdout_logger_mt("varpro");
-    auto logger2 = spdlog::stdout_logger_mt("varpro.cvarpro_block");
-    auto logger3 = spdlog::stdout_logger_mt("varpro.varpro_block");
-
-    logger1->set_level(spdlog::level::debug);
-    logger2->set_level(spdlog::level::debug);
-    logger3->set_level(spdlog::level::debug);
-
-    logger1->debug("initializing module varpro");
-    static varpro_module *instance = new varpro_module;
-    return instance->module().ptr();
+    new (&v) arma::vec(reinterpret_cast<arma::vec::elem_type *>(info.ptr), 
+            info.count);
 }
 
-// symbol required for the debug version
-extern "C" EXPORT_SYMBOL PyObject *PyInit_varpro_d() { 
-    return PyInit_varpro();
+void mat_np_init(arma::mat &m, py::array inp) 
+{
+    py::buffer_info info = inp.request();
+    if(info.format != py::format_descriptor<arma::mat::elem_type>::value() || info.ndim != 2)
+        throw std::runtime_error("Incompatible buffer format!");
+
+    if(info.strides[0] == info.itemsize) {
+        // F-contigious
+        new (&m) arma::mat(reinterpret_cast<arma::mat::elem_type *>(info.ptr),
+                info.shape[0], info.shape[1]);
+    } else {
+        // C-contigious
+        new (&m) arma::mat(reinterpret_cast<arma::mat::elem_type *>(info.ptr),
+                info.shape[1], info.shape[0]);
+        arma::inplace_trans(m);
+    }
+}
+
+PYBIND11_PLUGIN(varpro) {
+    py::module m("varpro", "C++ implementation of multiresponse regression using variable projection");
+
+    m.def("hello", &hello, "return a string containing a greeting");
+
+    py::module arma_mod = m.def_submodule("arma", "Python binding to armadillo types");
+    py::class_<arma::vec>(arma_mod, "Vec")
+        .def(py::init<const arma::uword>())
+        .def("__init__", &vec_np_init)
+        .def_property_readonly("n_rows", [](const arma::vec &a){return a.n_rows;})
+        .def_property_readonly("n_elem", [](const arma::vec &a){return a.n_elem;})
+        .def("zeros", [](arma::vec &a){ a.zeros();})
+        .def("ones", [](arma::vec &a){ a.ones();})
+        .def("randn", [](arma::vec &a){ a.randn();})
+        .def("print", [](const arma::vec&a){a.print();})
+        .def("print", [](const arma::vec&a, std::string arg){a.print(arg);})
+        .def_buffer(&vec_buffer);
+
+    py::class_<arma::mat>(arma_mod, "Mat")
+        .def(py::init<const arma::uword, const arma::uword>())
+        .def("__init__", &mat_np_init)
+        .def_property_readonly("n_rows", [](const arma::mat &a){return a.n_rows;})
+        .def_property_readonly("n_cols", [](const arma::mat &a){return a.n_cols;})
+        .def_property_readonly("n_elem", [](const arma::mat &a){return a.n_elem;})
+        .def("zeros", [](arma::mat &a){ a.zeros();})
+        .def("ones", [](arma::mat &a){ a.ones();})
+        .def("randn", [](arma::mat &a){ a.randn();})
+        .def("print", [](const arma::mat&a){a.print();})
+        .def("print", [](const arma::mat&a, std::string arg){a.print(arg);})
+        .def_buffer(&mat_buffer);
+
+    return m.ptr();
 }

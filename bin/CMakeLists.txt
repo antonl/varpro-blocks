@@ -6,10 +6,10 @@
 #  )
 
 # Add c module
-add_executable( test_arma main.cc )
-add_dependencies( test_arma varpro-blocks )
-target_link_libraries( test_arma varpro-blocks ${ARMADILLO_LIBRARIES})
-set_property(TARGET test_arma PROPERTY CXX_STANDARD 11)
+#add_executable( test_arma main.cc )
+#add_dependencies( test_arma varpro-blocks )
+#target_link_libraries( test_arma varpro-blocks ${ARMADILLO_LIBRARIES})
+#set_property(TARGET test_arma PROPERTY CXX_STANDARD 11)
 
 add_executable( test_templating test_templating.cpp )
 set_property(TARGET test_templating PROPERTY CXX_STANDARD 11)
