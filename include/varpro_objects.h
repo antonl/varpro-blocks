@@ -5,7 +5,7 @@
 #include <tuple>
 #include "spdlog/spdlog.h"
 
-typedef std::tuple<const arma::vec, const arma::mat> yJ_pair;
+typedef std::tuple<arma::vec, arma::mat> yJ_pair;
 
 class response_block 
 {
@@ -19,28 +19,27 @@ public:
     const yJ_pair get_yJ() const;
 
 protected:
-    virtual void evaluate_model(const arma::vec& p);
-    virtual void evaluate_jacobian(const arma::vec& p);
+    std::shared_ptr<spdlog::logger> log;
+
+    virtual void evaluate_model(const arma::vec& p) = 0;
+    virtual void evaluate_jacobian(const arma::vec& p) = 0;
 
     const arma::vec y; // measured response
+    arma::uword M; // number of measurements
     arma::vec yh; // estimated response
     arma::vec resid; // residuals
-
-    arma::uword M; // number of measurements
-
-    arma::vec alpha; // nonlinear parameter vector
-    arma::vec beta; // linear parameter vector
 
     arma::mat Amat; // model matrix
     
     arma::umat jidx; // indexing matrix for sparse jacobian
     arma::mat mjac; // sparse matrix jacobian
-    arma::mat J; // projected jacobian
 
-    arma::mat dkc, dkrw; // cached terms used in varpro jacobian
-private:
-    std::shared_ptr<spdlog::logger> log;
     arma::uword feval, jeval; // evaluations of model function
+
+    arma::mat J; // projected jacobian
+    arma::mat dkc, dkrw; // cached terms used in varpro jacobian
+    arma::vec alpha; // nonlinear parameter vector
+    arma::vec beta; // linear parameter vector
 };
 
 class exp_model : public response_block
@@ -51,8 +50,7 @@ public:
     static constexpr auto name = "exp_model";
 
 protected:
+    virtual void evaluate_model(const arma::vec&p);
+    virtual void evaluate_jacobian(const arma::vec&p);
     const arma::vec tvec;
-
-private:
-    std::shared_ptr<spdlog::logger> log;
 };

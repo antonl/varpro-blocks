@@ -25,9 +25,10 @@ if(APPLE)
     set_target_properties(test_pybind PROPERTIES MACOSX_RPATH TRUE)
 endif() 
 
-add_library(varpro SHARED varpro_module.cpp varpro_objects.cpp)
+add_library(varpro SHARED varpro_module.cpp varpro_objects.cpp varpro_util.cpp)
 set_target_properties(varpro PROPERTIES LINKER_LANGUAGE CXX CXX_STANDARD 11)
 set_target_properties(varpro PROPERTIES PREFIX "" SUFFIX ".so")
+target_link_libraries(varpro ${ARMADILLO_LIBRARIES})
 if(APPLE)
     # following advice from http://blog.tim-smith.us/2015/09/python-extension-modules-os-x/
     set_target_properties(varpro PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
