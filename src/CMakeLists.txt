@@ -5,7 +5,7 @@
 #    PROPERTIES CYTHON_IS_CXX TRUE )
 
 # Multi-file cython modules do not appear to be working at the moment.
-#cython_add_module( varpro varpro.pyx )
+cython_add_module( varproold varproold.pyx )
 #cython_add_module( arma arma.pyx )
 #cython_add_module( varprocpp varprocpp.pyx )
 

@@ -5,8 +5,6 @@
 #include <tuple>
 #include "spdlog/spdlog.h"
 
-typedef std::tuple<arma::vec, arma::mat> yJ_pair;
-
 class response_block 
 {
 public:
@@ -16,7 +14,13 @@ public:
     void update_model(const arma::vec p, bool update_jac=false);
     static constexpr auto name = "response_block";
 
-    const yJ_pair get_yJ() const;
+    const std::tuple<arma::vec, arma::vec, arma::mat> get_yrJ() const;
+
+    const std::tuple<arma::vec, arma::vec> get_params() const;
+    const arma::vec get_target() const;
+    const std::tuple<arma::mat, arma::umat, arma::mat, 
+          arma::mat, arma::mat, arma::mat> get_internal() const;
+    const std::tuple<arma::mat, arma::vec, arma::mat> get_svd() const;
 
 protected:
     std::shared_ptr<spdlog::logger> log;
@@ -40,6 +44,10 @@ protected:
     arma::mat dkc, dkrw; // cached terms used in varpro jacobian
     arma::vec alpha; // nonlinear parameter vector
     arma::vec beta; // linear parameter vector
+    arma::mat U;
+    arma::mat V;
+    arma::vec s;
+
 };
 
 class exp_model : public response_block

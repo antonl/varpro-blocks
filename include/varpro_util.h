@@ -12,7 +12,9 @@ typedef std::tuple<py::array, py::array> np_yJ;
 const std::string hello();
 py::buffer_info vec_buffer(arma::vec &m);
 py::buffer_info mat_buffer(arma::mat &m);
+py::buffer_info umat_buffer(arma::umat &m);
 void vec_np_init(arma::vec &v, py::array inp);
 void mat_np_init(arma::mat &m, py::array inp);
+void umat_np_init(arma::umat &m, py::array inp);
 
 //np_yJ package_yJ(const response_block&);

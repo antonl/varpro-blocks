@@ -33,7 +33,20 @@ py::buffer_info mat_buffer(arma::mat &m)
             py::format_descriptor<arma::mat::elem_type>::value(),
             2,
             {m.n_rows, m.n_cols},
-            {sizeof(arma::mat::elem_type), sizeof(arma::vec::elem_type)*m.n_rows}
+            {sizeof(arma::mat::elem_type), sizeof(arma::mat::elem_type)*m.n_rows}
+        );
+    return buf;
+}
+
+py::buffer_info umat_buffer(arma::umat &m) 
+{
+    py::buffer_info buf(
+            m.memptr(), 
+            sizeof(arma::umat::elem_type), 
+            py::format_descriptor<arma::umat::elem_type>::value(),
+            2,
+            {m.n_rows, m.n_cols},
+            {sizeof(arma::umat::elem_type), sizeof(arma::umat::elem_type)*m.n_rows}
         );
     return buf;
 }
@@ -67,6 +80,28 @@ void mat_np_init(arma::mat &m, py::array inp)
             info.strides[0] == (info.itemsize * info.shape[1])) {
         // C-contigious
         new (&m) arma::mat(reinterpret_cast<arma::mat::elem_type *>(info.ptr),
+                info.shape[1], info.shape[0]);
+        arma::inplace_trans(m);
+    } else {
+        throw std::runtime_error("array not contiguous");
+    }
+}
+
+void umat_np_init(arma::umat &m, py::array inp) 
+{
+    py::buffer_info info = inp.request();
+    if(info.format != py::format_descriptor<arma::umat::elem_type>::value() || info.ndim != 2)
+        throw std::runtime_error("Incompatible buffer format!");
+
+    if(info.strides[0] == info.itemsize && 
+            info.strides[1] == (info.itemsize * info.shape[0])) {
+        // F-contigious
+        new (&m) arma::umat(reinterpret_cast<arma::umat::elem_type *>(info.ptr),
+                info.shape[0], info.shape[1]);
+    } else if (info.strides[1] == info.itemsize &&
+            info.strides[0] == (info.itemsize * info.shape[1])) {
+        // C-contigious
+        new (&m) arma::umat(reinterpret_cast<arma::umat::elem_type *>(info.ptr),
                 info.shape[1], info.shape[0]);
         arma::inplace_trans(m);
     } else {

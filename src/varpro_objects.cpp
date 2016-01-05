@@ -23,9 +23,24 @@ response_block::~response_block()
     log->debug("in response_block::~response_block()");
 }
 
-const yJ_pair response_block::get_yJ() const 
+const std::tuple<arma::vec, arma::vec, arma::mat> response_block::get_yrJ() const
 {
-    return std::make_tuple(yh, J); 
+    return std::make_tuple(yh, resid, J); 
+}
+
+const arma::vec response_block::get_target() const
+{
+    return y;
+}
+
+const std::tuple<arma::vec, arma::vec> response_block::get_params() const 
+{
+    return std::make_tuple(alpha, beta);
+}
+
+const std::tuple<arma::mat, arma::vec, arma::mat> response_block::get_svd() const 
+{
+    return std::make_tuple(U, s, V);
 }
 
 void response_block::update_model(const arma::vec p, bool update_jac)
@@ -42,9 +57,8 @@ void response_block::update_model(const arma::vec p, bool update_jac)
     ++feval;
 
     log->debug("calculating linear parameters");
-    mat U, V;
-    vec s;
-    mat Ut, Vt;
+    //mat U, V;
+    //vec s;
     mat Apinv;
     mat Sinv;
 
@@ -55,8 +69,8 @@ void response_block::update_model(const arma::vec p, bool update_jac)
         throw std::runtime_error("SVD decomposition failed");
     }
 
-    Ut = U.t();
-    Vt = V.t();
+    mat Ut = U.t();
+    mat Vt = V.t();
     log->debug("SVD sizes: U: {}, s: {}, V: {}",
             size(U), size(s), size(V));
     
@@ -78,6 +92,8 @@ void response_block::update_model(const arma::vec p, bool update_jac)
     log->debug("calculating the projected jacobian");
     dkc.set_size(M, jidx.n_cols);
     dkrw.set_size(Amat.n_cols, jidx.n_cols);
+    dkc.zeros();
+    dkrw.zeros();
     log->debug("expected dkc size: {}, dkrw: {} ", size(dkc), size(dkrw));
 
     // unpack the dense jidx,mjac structure
@@ -90,8 +106,8 @@ void response_block::update_model(const arma::vec p, bool update_jac)
 
         for(auto j = 0; j < M; j++) {
             //log->debug("Accessing (j={}, i={}", j, i);
-            dkc(j, i) = mjac(j, i)*beta(basis_no);
-            dkrw(basis_no, i) = mjac(j, i)*resid(j);
+            dkc(j, i) += mjac(j, i)*beta(basis_no);
+            dkrw(basis_no, i) += mjac(j, i)*resid(j);
         }
     }
 
@@ -106,10 +122,18 @@ void response_block::update_model(const arma::vec p, bool update_jac)
     for(auto i = 0; i < jidx.n_cols; i++) {
         basis_no = jidx(0, i);
         param_no = jidx(1, i);
-        for(auto j = 0; j < M; ++j) 
-            J(j, param_no) = -(A(j, i) + B(j, i)); 
+        for(auto j = 0; j < M; j++) 
+            J(j, param_no) += (A(j, i) + B(j, i)); // removed minus sign for LM method
+            //J(j, param_no) += -A(j, i); 
+            //J(j, param_no) += -B(j, i); 
     }
     log->debug("finished; counts: feval={}, jeval={}", feval, jeval);
+}
+
+const std::tuple<arma::mat, arma::umat, arma::mat, 
+      arma::mat, arma::mat, arma::mat> response_block::get_internal() const
+{
+    return std::make_tuple(Amat, jidx, mjac, dkc, dkrw, J);
 }
 
 exp_model::exp_model(const arma::vec& m, const arma::vec& t):
