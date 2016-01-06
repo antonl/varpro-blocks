@@ -3,6 +3,7 @@
 #include <tuple>
 #include "pybind11/pybind11.h"
 #include "pybind11/numpy.h"
+#include "pybind11/stl.h"
 #include "varpro_objects.h"
 #include "varpro_util.h"
 #include "spdlog/spdlog.h"
@@ -18,6 +19,11 @@ PYBIND11_PLUGIN(varpro) {
 
     m.def("hello", &hello, "return a string containing a greeting");
 
+    py::class_<fit_report>(m, "fit_report")
+        .def_property_readonly("labels", [](const fit_report &m){return m.labels;})
+        .def_property_readonly("parameters", 
+                [](const fit_report &m){return m.parameters;});
+
     py::class_<response_block> rb(m, "_response_block");
 
     py::class_<exp_model>(m, exp_model::name, rb)
@@ -28,8 +34,8 @@ PYBIND11_PLUGIN(varpro) {
         .def_property_readonly("_internal", [](const exp_model& m){return m.get_internal();})
         .def_property_readonly("_svd", [](const exp_model& m){return m.get_svd();})
         .def("update_model", &exp_model::update_model, 
-            "update the model", py::arg("p0"), py::arg("update_jac") = false);
-
+            "update the model", py::arg("p0"), py::arg("update_jac") = false)
+        .def_property_readonly("fit_report", [](const exp_model& m){return m.get_fit_report();});
 
     py::module arma_mod = m.def_submodule("arma", "Python binding to armadillo types");
     py::class_<arma::vec>(arma_mod, "Vec")

@@ -3,7 +3,20 @@
 #include <tuple>
 #include <cmath>
 #include <iostream>
+#include <iterator>
 #include "varpro_objects.h"
+
+constexpr const std::array<const char *, 1> response_block::param_labels ;
+constexpr const std::array<const char *, 3> exp_model::param_labels;
+
+fit_report::fit_report(arma::mat H, arma::vec params, arma::vec residuals, 
+           dof_spec dof, std::vector<const char*> param_labels):
+    parameters(params)
+{
+    std::for_each(param_labels.begin(), param_labels.end(), 
+            [&](const char *s){labels.push_back(s);});
+
+}
 
 response_block::response_block(const arma::vec &m):
     y(m), 
@@ -177,4 +190,31 @@ void exp_model::evaluate_jacobian(const arma::vec& p)
         mjac(i, 0) = -t*std::exp(-t*p(0));
     }
     log->debug("done updating mjac");
+}
+
+const fit_report exp_model::get_fit_report() const
+{
+    log->debug("generating fit_report");
+    // generate H matrix
+    arma::mat H;
+    H.set_size(M, Amat.n_cols + J.n_cols);
+
+    // copy over both the linear jacobian (which is just the model matrix)
+    // and the projected jacobian
+    std::copy(Amat.begin(), Amat.end(), H.begin());
+    std::copy(J.begin(), J.end(), H.begin_col(Amat.n_cols));
+
+    arma::vec params;
+    params.set_size(beta.n_elem + alpha.n_elem);
+    // Do the same with the parameters
+    std::copy(beta.cbegin(), beta.cend(), params.begin());
+    std::copy(alpha.cbegin(), alpha.cend(), params.begin_row(beta.n_elem));
+
+    std::vector <const char *> labels;
+    std::for_each(param_labels.begin(), param_labels.end(), 
+            [&](const char *s){labels.push_back(s);});
+    log->debug("vector size: {}", labels.size());
+
+    std::copy(labels.begin(), labels.end(), std::ostream_iterator<const char *>(std::cout));
+    return fit_report(H, params, resid, dof, labels);
 }
