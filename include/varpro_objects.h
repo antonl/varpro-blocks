@@ -15,12 +15,13 @@ struct fit_report
     double R2; // coefficient of determination
     arma::uword mdof; // model degrees of freedom
     arma::uword ddof; // data degrees of freedom
-    arma::vec se; // standard error of regression
+    arma::vec se; // standard error in parameters
     arma::mat cov; // variance/covariance matrix
     arma::mat cor; // correlation matrix
     arma::vec tratio; // Student's T ratio of parameters
     arma::vec parameters; // vector of parameter values
     std::vector<std::string> labels; // labels of parameter values
+    arma::vec wresid; // weighted residuals
     arma::vec tresid; // Studentized residual
 
     fit_report(const arma::mat H,

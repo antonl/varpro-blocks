@@ -9,13 +9,34 @@
 constexpr const std::array<const char *, 1> response_block::param_labels ;
 constexpr const std::array<const char *, 3> exp_model::param_labels;
 
-fit_report::fit_report(arma::mat H, arma::vec params, arma::vec residuals, 
-           dof_spec dof, std::vector<const char*> param_labels):
-    parameters(params)
+fit_report::fit_report(
+        const arma::mat H, 
+        const arma::vec params, 
+        const arma::vec residuals, 
+        const dof_spec dof, 
+        const std::vector<const char*> param_labels):
+    parameters(params),
+    wresid(residuals)
 {
+    // copy over labels 
     std::for_each(param_labels.begin(), param_labels.end(), 
             [&](const char *s){labels.push_back(s);});
+    // QR decompose H to calculate correlation matrix
+    arma::mat Q, R, Rinv, I;
+    arma::qr_econ(Q, R, H);
+    I = arma::eye(R.n_cols, R.n_cols);
+    arma::solve(Rinv, arma::trimatu(R), I);
 
+    cov = Rinv*Rinv.t();
+    se = arma::sqrt(cov.diag());
+    arma::mat D = arma::diagmat(1./se);
+    cor = D*cov*D.t();
+
+    tratio = parameters/se;
+
+    mdof = std::get<0>(dof);
+    ddof = wresid.n_elem - mdof - (std::get<1>(dof)? 1 : 0 );
+    tresid = arma::mat(Q*Q.t()).diag();
 }
 
 response_block::response_block(const arma::vec &m):
@@ -215,6 +236,5 @@ const fit_report exp_model::get_fit_report() const
             [&](const char *s){labels.push_back(s);});
     log->debug("vector size: {}", labels.size());
 
-    std::copy(labels.begin(), labels.end(), std::ostream_iterator<const char *>(std::cout));
     return fit_report(H, params, resid, dof, labels);
 }

@@ -22,7 +22,17 @@ PYBIND11_PLUGIN(varpro) {
     py::class_<fit_report>(m, "fit_report")
         .def_property_readonly("labels", [](const fit_report &m){return m.labels;})
         .def_property_readonly("parameters", 
-                [](const fit_report &m){return m.parameters;});
+                [](const fit_report &m){return m.parameters;})
+        .def_property_readonly("dof", 
+                [](const fit_report &m){return std::make_tuple(m.ddof, m.mdof);})
+        .def_property_readonly("cov", 
+                [](const fit_report &m){return m.cov;})
+        .def_property_readonly("se", 
+                [](const fit_report &m){return m.se;})
+        .def_property_readonly("tratio", 
+                [](const fit_report &m){return m.tratio;})
+        .def_property_readonly("cor", 
+                [](const fit_report &m){return m.cor;});
 
     py::class_<response_block> rb(m, "_response_block");
 
