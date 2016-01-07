@@ -20,6 +20,8 @@ find_package( NumPy REQUIRED )
 
 find_package( Armadillo REQUIRED )
 
+find_package( gsl REQUIRED )
+
 # With CMake, a clean separation can be made between the source tree and the
 # build tree.  When all source is compiled, as with pure C/C++, the source is
 # no-longer needed in the build tree.  However, with pure *.py source, the
@@ -37,6 +39,7 @@ include_directories(
     ${PYTHON_INCLUDE_DIRS}
     ${PYBIND11_INCLUDE_DIRS}
     ${SPDLOG_INCLUDE_DIRS}
+    ${GSL_INCLUDE_DIRS}
     )
 
 enable_testing()

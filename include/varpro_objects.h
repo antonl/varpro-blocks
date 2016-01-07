@@ -11,24 +11,27 @@ typedef std::tuple<arma::uword, bool> dof_spec; // number of degrees of freedom,
 
 struct fit_report
 {
-    double rse; // weighted residual squared error
-    double R2; // coefficient of determination
+    double chisqr; // sum of squares of the residual
+    double rms; // residual mean square (variance)
+    double rme; // residual mean error (error)
+    double rsqr; // coefficient of determination
     arma::uword mdof; // model degrees of freedom
     arma::uword ddof; // data degrees of freedom
     arma::vec se; // standard error in parameters
-    arma::mat cov; // variance/covariance matrix
     arma::mat cor; // correlation matrix
-    arma::vec tratio; // Student's T ratio of parameters
+    arma::vec tstat; // Student's T statistic of parameters
     arma::vec parameters; // vector of parameter values
     std::vector<std::string> labels; // labels of parameter values
+    std::vector<std::tuple<double, double, double>> marginal_ci;
     arma::vec wresid; // weighted residuals
     arma::vec tresid; // Studentized residual
 
-    fit_report(const arma::mat H,
-               const arma::vec params, 
-               const arma::vec residuals, 
-               const dof_spec dof, 
-               const std::vector<const char*> param_labels);
+    fit_report(arma::mat H,
+               arma::vec params, 
+               arma::vec residuals, 
+               dof_spec dof, 
+               std::vector<const char*> param_labels,
+               double alpha);
 };
 
 class response_block 
@@ -47,7 +50,7 @@ public:
           arma::mat, arma::mat, arma::mat> get_internal() const;
     const std::tuple<arma::mat, arma::vec, arma::mat> get_svd() const;
 
-    virtual const fit_report get_fit_report() const = 0;
+    virtual const fit_report get_fit_report(double alpha) const = 0;
 
     static constexpr auto name = "response_block";
     static constexpr dof_spec dof = std::make_tuple(0, true);
@@ -86,7 +89,7 @@ class exp_model : public response_block
 public:
     explicit exp_model(const arma::vec& m, const arma::vec& t);
     virtual ~exp_model();
-    virtual const fit_report get_fit_report() const;
+    virtual const fit_report get_fit_report(double alpha = 5.) const;
 
     static constexpr auto name = "exp_model";
     static constexpr dof_spec dof = std::make_tuple(2, true);

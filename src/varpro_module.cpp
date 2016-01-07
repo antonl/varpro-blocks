@@ -25,12 +25,18 @@ PYBIND11_PLUGIN(varpro) {
                 [](const fit_report &m){return m.parameters;})
         .def_property_readonly("dof", 
                 [](const fit_report &m){return std::make_tuple(m.ddof, m.mdof);})
-        .def_property_readonly("cov", 
-                [](const fit_report &m){return m.cov;})
+        .def_property_readonly("marginal_ci", 
+                [](const fit_report &m){return m.marginal_ci;})
         .def_property_readonly("se", 
                 [](const fit_report &m){return m.se;})
-        .def_property_readonly("tratio", 
-                [](const fit_report &m){return m.tratio;})
+        .def_property_readonly("stats", 
+                [](const fit_report &m){return std::make_tuple(m.chisqr, m.rms, m.rme);})
+        .def_property_readonly("tresid", 
+                [](const fit_report &m){return m.tresid;})
+        .def_property_readonly("wresid", 
+                [](const fit_report &m){return m.wresid;})
+        .def_property_readonly("tstat", 
+                [](const fit_report &m){return m.tstat;})
         .def_property_readonly("cor", 
                 [](const fit_report &m){return m.cor;});
 
@@ -45,7 +51,7 @@ PYBIND11_PLUGIN(varpro) {
         .def_property_readonly("_svd", [](const exp_model& m){return m.get_svd();})
         .def("update_model", &exp_model::update_model, 
             "update the model", py::arg("p0"), py::arg("update_jac") = false)
-        .def_property_readonly("fit_report", [](const exp_model& m){return m.get_fit_report();});
+        .def("fit_report", [](const exp_model& m, double alpha){return m.get_fit_report(alpha);}, py::arg("alpha") = 5.);
 
     py::module arma_mod = m.def_submodule("arma", "Python binding to armadillo types");
     py::class_<arma::vec>(arma_mod, "Vec")

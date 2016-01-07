@@ -4,39 +4,68 @@
 #include <cmath>
 #include <iostream>
 #include <iterator>
+#include <gsl/gsl_cdf.h>
 #include "varpro_objects.h"
 
 constexpr const std::array<const char *, 1> response_block::param_labels ;
 constexpr const std::array<const char *, 3> exp_model::param_labels;
 
 fit_report::fit_report(
-        const arma::mat H, 
-        const arma::vec params, 
-        const arma::vec residuals, 
-        const dof_spec dof, 
-        const std::vector<const char*> param_labels):
+        arma::mat H, 
+        arma::vec params, 
+        arma::vec residuals, 
+        dof_spec dof, 
+        std::vector<const char*> param_labels,
+        double alpha):
     parameters(params),
     wresid(residuals)
 {
     // copy over labels 
     std::for_each(param_labels.begin(), param_labels.end(), 
             [&](const char *s){labels.push_back(s);});
+
+    mdof = std::get<0>(dof);
+    ddof = wresid.n_elem - mdof - (std::get<1>(dof)? 1 : 0);
+    chisqr = arma::sum(wresid.t()*wresid);
+    rms = chisqr/ddof;
+    rme = std::sqrt(rms);
+
     // QR decompose H to calculate correlation matrix
     arma::mat Q, R, Rinv, I;
     arma::qr_econ(Q, R, H);
     I = arma::eye(R.n_cols, R.n_cols);
     arma::solve(Rinv, arma::trimatu(R), I);
 
-    cov = Rinv*Rinv.t();
-    se = arma::sqrt(cov.diag());
-    arma::mat D = arma::diagmat(1./se);
-    cor = D*cov*D.t();
+    arma::mat L(arma::size(Rinv));
+    arma::vec ln(Rinv.n_rows);
 
-    tratio = parameters/se;
+    for(auto i = 0; i < Rinv.n_rows; i++) {
+        ln(i) = arma::norm(Rinv.row(i));
+        L.row(i) = Rinv.row(i)/ln(i);
+    }
 
-    mdof = std::get<0>(dof);
-    ddof = wresid.n_elem - mdof - (std::get<1>(dof)? 1 : 0 );
-    tresid = arma::mat(Q*Q.t()).diag();
+    cor = L*L.t();
+    se = rme*ln;
+
+    if(alpha <= 0.) throw std::logic_error("alpha parameter must be positive");
+    double tval = gsl_cdf_tdist_Qinv(alpha/200., ddof); 
+
+    double param;
+    for(auto i = 0; i < parameters.n_elem; i++) {
+        param = parameters(i);
+        marginal_ci.push_back(
+                std::make_tuple(param, param - rme*tval, param + rme*tval)
+        );
+    }
+
+    tstat = parameters/se;
+
+    double st;
+    tresid.copy_size(wresid);
+    for(auto i = 0; i < Q.n_rows; i++) {
+        st = std::sqrt(1. - arma::norm(Q.row(i)));
+        tresid(i) = wresid(i)*rme*st;
+    }
 }
 
 response_block::response_block(const arma::vec &m):
@@ -213,7 +242,7 @@ void exp_model::evaluate_jacobian(const arma::vec& p)
     log->debug("done updating mjac");
 }
 
-const fit_report exp_model::get_fit_report() const
+const fit_report exp_model::get_fit_report(double _a) const
 {
     log->debug("generating fit_report");
     // generate H matrix
@@ -235,6 +264,7 @@ const fit_report exp_model::get_fit_report() const
     std::for_each(param_labels.begin(), param_labels.end(), 
             [&](const char *s){labels.push_back(s);});
     log->debug("vector size: {}", labels.size());
+    log->debug("alpha parameter: {}", _a);
 
-    return fit_report(H, params, resid, dof, labels);
+    return fit_report(H, params, resid, dof, labels, _a);
 }
