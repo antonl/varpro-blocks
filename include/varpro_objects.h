@@ -15,6 +15,8 @@ struct fit_report
     double rms; // residual mean square (variance)
     double rme; // residual mean error (error)
     double rsqr; // coefficient of determination
+    double alpha; // upper quantile of confidence
+    double cond; // condition number of X vector
     arma::uword mdof; // model degrees of freedom
     arma::uword ddof; // data degrees of freedom
     arma::vec se; // standard error in parameters
@@ -25,13 +27,17 @@ struct fit_report
     std::vector<std::tuple<double, double, double>> marginal_ci;
     arma::vec wresid; // weighted residuals
     arma::vec tresid; // Studentized residual
+    std::string model_name;
 
-    fit_report(arma::mat H,
+    fit_report(std::string model_name,
+               arma::mat H,
                arma::vec params, 
                arma::vec residuals, 
                dof_spec dof, 
                std::vector<const char*> param_labels,
                double alpha);
+
+    std::string printable_summary(unsigned int width = 80) const;
 };
 
 class response_block 

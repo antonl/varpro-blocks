@@ -12,7 +12,7 @@ namespace py  = pybind11;
 
 PYBIND11_PLUGIN(varpro) {
     auto console = spdlog::stdout_logger_st("varpro");
-    console->set_level(spdlog::level::debug);
+    console->set_level(spdlog::level::info);
     console->debug("initializing module varpro");
 
     py::module m("varpro", "C++ implementation of multiresponse regression using variable projection");
@@ -38,7 +38,10 @@ PYBIND11_PLUGIN(varpro) {
         .def_property_readonly("tstat", 
                 [](const fit_report &m){return m.tstat;})
         .def_property_readonly("cor", 
-                [](const fit_report &m){return m.cor;});
+                [](const fit_report &m){return m.cor;})
+        .def("__repr__", 
+                [](const fit_report &m, unsigned int width)
+                {return m.printable_summary(width);}, py::arg("width") = 80);
 
     py::class_<response_block> rb(m, "_response_block");
 
