@@ -1,0 +1,6 @@
+[submodule "extern/pybind11"]
+	path = extern/pybind11
+	url = https://github.com/wjakob/pybind11.git
+[submodule "extern/spdlog"]
+	path = extern/spdlog
+	url = https://github.com/gabime/spdlog.git

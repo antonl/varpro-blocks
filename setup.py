@@ -19,6 +19,6 @@ setup(
     license = 'Apache',
     keywords = 'regression numpy cython cmake statistics',
     url = 'https://github.com/antonl/varpro',
-    test_require = ['nose'],
+    test_require = ['pytest'],
     zip_safe = False,
     )
