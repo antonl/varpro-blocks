@@ -58,9 +58,9 @@ public:
 
     virtual const fit_report get_fit_report(double alpha) const = 0;
 
-    static constexpr auto name = "response_block";
-    static constexpr dof_spec dof = std::make_tuple(0, true);
-    static constexpr std::array<const char*, 1> param_labels = {"intercept"};
+    static const char *name;
+    static const dof_spec dof;
+    static const std::array<const char*, 1> param_labels;
 
 protected:
     std::shared_ptr<spdlog::logger> log;
@@ -97,9 +97,9 @@ public:
     virtual ~exp_model();
     virtual const fit_report get_fit_report(double alpha = 5.) const;
 
-    static constexpr auto name = "exp_model";
-    static constexpr dof_spec dof = std::make_tuple(2, true);
-    static constexpr std::array<const char *, 3> param_labels = {"intercept", "A", "k1"};
+    static const char *name;
+    static const dof_spec dof;
+    static const std::array<const char *, 3> param_labels;
 
 protected:
     virtual void evaluate_model(const arma::vec&p);

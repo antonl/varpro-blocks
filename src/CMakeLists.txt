@@ -18,10 +18,15 @@
 
 add_library(varpro SHARED varpro_module.cpp varpro_objects.cpp varpro_util.cpp)
 set_target_properties(varpro PROPERTIES LINKER_LANGUAGE CXX CXX_STANDARD 11)
-set_target_properties(varpro PROPERTIES PREFIX "" SUFFIX ".so")
-target_link_libraries(varpro ${ARMADILLO_LIBRARIES} ${GSL_LIBRARIES})
+set_target_properties(varpro PROPERTIES PREFIX "" SUFFIX ".pyd")
+message(STATUS "Python library: " ${PYTHON_LIBRARIES})
+target_link_libraries(varpro ${PYTHON_LIBRARY} Threads::Threads
+    ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES} ${BOOST_LIBRARIES})
+
+install(TARGETS varpro LIBRARY DESTINATION src RUNTIME DESTINATION src)
+
 if(APPLE)
     # following advice from http://blog.tim-smith.us/2015/09/python-extension-modules-os-x/
-    set_target_properties(varpro PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
+    set_target_properties(varpro PROPERTIES LINK_FLAGS "-Wl,--undefined dynamic_lookup")
     set_target_properties(varpro PROPERTIES MACOSX_RPATH TRUE)
 endif() 

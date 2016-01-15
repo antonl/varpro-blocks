@@ -5,11 +5,8 @@
 #include <iostream>
 #include <iomanip>
 #include <iterator>
-#include <gsl/gsl_cdf.h>
+#include "boost/math/distributions.hpp"
 #include "varpro_objects.h"
-
-constexpr const std::array<const char *, 1> response_block::param_labels ;
-constexpr const std::array<const char *, 3> exp_model::param_labels;
 
 fit_report::fit_report(
         std::string name,
@@ -53,7 +50,13 @@ fit_report::fit_report(
     se = rme*ln;
 
     if(alpha <= 0.) throw std::logic_error("alpha parameter must be positive");
-    double tval = gsl_cdf_tdist_Qinv(alpha/200., ddof); 
+
+    //double tval = gsl_cdf_tdist_Qinv(alpha/200., ddof); 
+    using boost::math::students_t;
+    using boost::math::complement;
+    using boost::math::quantile;
+    students_t tgen(ddof);
+	double tval = quantile(complement(tgen, alpha / 200));
 
     double param;
     for(auto i = 0; i < parameters.n_elem; i++) {
@@ -142,7 +145,7 @@ std::string fit_report::printable_summary(unsigned int width) const
 
     stringstream conf_field;
     conf_field << "[" << setprecision(3) << (1 - alpha/100.) 
-        << "\% Conf. Int.]";
+        << "% Conf. Int.]";
 
     s << setw(int(width/7)) << left << " " 
       << setw(int(width/7)) << right << "coef"
@@ -196,6 +199,10 @@ response_block::~response_block()
 {
     log->debug("in response_block::~response_block()");
 }
+
+const char *response_block::name = "response_block";
+const dof_spec response_block::dof = std::make_tuple(0, true);
+const std::array<const char *, 1> response_block::param_labels = {"intercept"};
 
 const std::tuple<arma::vec, arma::vec, arma::mat> response_block::get_yrJ() const
 {
@@ -329,6 +336,10 @@ exp_model::~exp_model()
 {
     log->debug("in exp_model::~exp_model()");
 }
+
+const char *exp_model::name = "exp_model";
+const dof_spec exp_model::dof = std::make_tuple(2, true);
+const std::array<const char *, 3> exp_model::param_labels = {"intercept", "A", "k1" };
 
 void exp_model::evaluate_model(const arma::vec& p) 
 {
